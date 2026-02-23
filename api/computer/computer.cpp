@@ -144,7 +144,7 @@ bool setMouseGrabbing(bool grabbing = true) {
             seat,
             window,
             GDK_SEAT_CAPABILITY_POINTER,
-            TRUE,
+            FALSE,
             NULL,
             NULL,
             NULL,
