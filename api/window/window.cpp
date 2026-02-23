@@ -1297,6 +1297,10 @@ bool init(const json &windowOptions) {
     return true;
 }
 
+NEU_W_HANDLE getHandle() {
+    return windowHandle;
+}
+
 namespace controllers {
 
 json setTitle(const json &input) {

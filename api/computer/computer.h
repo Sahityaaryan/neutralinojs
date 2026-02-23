@@ -11,23 +11,9 @@ using namespace std;
 
 namespace computer {
 
-enum class CoordSpace {
-    Window,
-    Screen
-};
-
-struct InputCapabilities {
-    bool warp = false;
-    bool grab = false;
-    bool syntheticKeys = false;
-};
-
-bool setCursorPosition(int x, int y, CoordSpace space);
-bool setCursorGrab(bool enabled);
-bool sendKey(const string &key,
-             const vector<string> &mods,
-             const string &state);
-InputCapabilities getInputCapabilities();
+bool setMousePosition(int x, int y);
+bool setMouseGrabbing(bool grabbing);
+bool sendKey(const string &key, bool up);
 
 string getArch();
 pair<int, int> getMousePosition();
@@ -41,11 +27,9 @@ json getOSInfo(const json &input);
 json getCPUInfo(const json &input);
 json getDisplays(const json &input);
 json getMousePosition(const json &input);
-
-json setCursorPosition(const json &input);
-json setCursorGrab(const json &input);
-json sendKey(const json &input);
-json getInputCapabilities(const json &input);
+json setMousePosition(const json &input);
+json setMouseGrabbing(const json &input);
+json sendKey(const json &input);;
 
 } // namespace controllers
 } // namespace computer

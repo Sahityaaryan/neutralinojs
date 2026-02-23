@@ -86,11 +86,9 @@ map<string, router::NativeMethod> methodMap = {
     {"computer.getCPUInfo", computer::controllers::getCPUInfo},
     {"computer.getDisplays", computer::controllers::getDisplays},
     {"computer.getMousePosition", computer::controllers::getMousePosition},
-    {"computer.setCursorPosition", computer::controllers::setCursorPosition},
-    {"computer.setCursorGrab", computer::controllers::setCursorGrab},
+    {"computer.setMousePosition", computer::controllers::setMousePosition},
+    {"computer.setMouseGrabbing", computer::controllers::setMouseGrabbing},
     {"computer.sendKey", computer::controllers::sendKey},
-    {"computer.getInputCapabilities", computer::controllers::getInputCapabilities},
-
     // Neutralino.debug
     {"debug.log", debug::controllers::log},
     // Neutralino.filesystem
