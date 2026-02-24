@@ -214,8 +214,12 @@ elseif(APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE
       ${WebKit_FRAMEWORK}
       ${COCOA_FRAMEWORK}
-      ${SCREENCAPTUREKIT_FRAMEWORK}
     )
+    if(SCREENCAPTUREKIT_FRAMEWORK)
+      target_link_libraries(${PROJECT_NAME} PRIVATE
+        ${SCREENCAPTUREKIT_FRAMEWORK}
+      )
+    endif()
     target_compile_options(${PROJECT_NAME} PRIVATE
       -Wno-deprecated-declarations
       -Os
