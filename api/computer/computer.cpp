@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <CoreGraphics/CGEvent.h>
+#include <CoreGraphics/CGEventSource.h>
 
 #elif defined(_WIN32)
 #define _WINSOCKAPI_
@@ -125,12 +126,12 @@ bool setMouseGrabbing(bool grabbing = true) {
 
     #elif defined(__APPLE__)
     if(grabbing) {
-        CGAssociateMouseAndMouseCursorPosition(false);
         CGDisplayHideCursor(kCGDirectMainDisplay);
+        CGAssociateMouseAndMouseCursorPosition(false);
     }
     else {
-        CGAssociateMouseAndMouseCursorPosition(true);
         CGDisplayShowCursor(kCGDirectMainDisplay);
+        CGAssociateMouseAndMouseCursorPosition(true);
     }
     return true;
 
@@ -145,10 +146,10 @@ bool setMouseGrabbing(bool grabbing = true) {
             window,
             GDK_SEAT_CAPABILITY_POINTER,
             FALSE,
-            NULL,
-            NULL,
-            NULL,
-            NULL
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr
         ) == GDK_GRAB_SUCCESS;
     }
     else {
@@ -178,12 +179,13 @@ bool sendKey(unsigned int keyCode, bool up = true) {
     return true;
 
     #elif defined(__APPLE__)
-    CGEventRef ev = CGEventCreateKeyboardEvent(nullptr, keyCode, true);
+    CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState);
+    CGEventRef ev = CGEventCreateKeyboardEvent(source, keyCode, true);
     CGEventPost(kCGHIDEventTap, ev);
     CFRelease(ev);
 
     if(up) {
-        ev = CGEventCreateKeyboardEvent(nullptr, keyCode, false);
+        ev = CGEventCreateKeyboardEvent(source, keyCode, false);
         CGEventPost(kCGHIDEventTap, ev);
         CFRelease(ev);
     }
