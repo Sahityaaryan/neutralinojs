@@ -23,8 +23,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/sysctl.h>
-#include <CoreGraphics/CGEvent.h>
-#include <CoreGraphics/CGEventSource.h>
+#include <CoreGraphics/CoreGraphics.h>
+#include <CoreFoundation/CoreFoundation.h>
 
 #elif defined(_WIN32)
 #define _WINSOCKAPI_
@@ -42,6 +42,41 @@ using namespace std;
 using json = nlohmann::json;
 
 namespace computer {
+
+#if defined(__APPLE__)
+CFMachPortRef mouseTap = nullptr;
+CFRunLoopSourceRef runLoopSource = nullptr;
+
+CGEventRef __mouseTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+    long winId = ((long(*)(id, SEL))objc_msgSend)(window::getHandle(), "windowNumber"_sel);
+    auto winInfoArray = CGWindowListCopyWindowInfo(kCGWindowListOptionIncludingWindow, winId);
+    auto winInfo = CFArrayGetValueAtIndex(winInfoArray, 0);
+    auto winBounds = (CFDictionaryRef)CFDictionaryGetValue((CFDictionaryRef) winInfo, kCGWindowBounds);
+
+    CGRect winRect = CGRectZero;
+    CGRectMakeWithDictionaryRepresentation(winBounds, &winRect);
+
+    if(CGRectIsEmpty(winRect)) return event;
+
+    if(type == kCGEventMouseMoved || type == kCGEventLeftMouseDragged || type == kCGEventRightMouseDragged) {
+        CGPoint location = CGEventGetLocation(event);
+        CGFloat minX = winRect.origin.x;
+        CGFloat maxX = winRect.origin.x + winRect.size.width;
+        CGFloat minY = winRect.origin.y;
+        CGFloat maxY = winRect.origin.y + winRect.size.height;
+
+        CGFloat clampedX = max(minX, min(location.x, maxX));
+        CGFloat clampedY = max(minY, min(location.y, maxY));
+
+        if(location.x != clampedX || location.y != clampedY) {
+            auto point = CGPointMake(clampedX, clampedY);
+            CGEventSetLocation(event, point);
+            CGWarpMouseCursorPosition(point);
+        }
+    }
+    return event;
+}
+#endif
 
 string getArch() {
     iware::cpu::architecture_t architecture = iware::cpu::architecture();
@@ -127,12 +162,33 @@ bool setMouseGrabbing(bool grabbing = true) {
 
     #elif defined(__APPLE__)
     if(grabbing) {
-        CGDisplayHideCursor(kCGDirectMainDisplay);
-        CGAssociateMouseAndMouseCursorPosition(false);
+        mouseTap = CGEventTapCreate(
+            kCGSessionEventTap, 
+            kCGHeadInsertEventTap, 
+            kCGEventTapOptionDefault, 
+            CGEventMaskBit(kCGEventMouseMoved) | CGEventMaskBit(kCGEventLeftMouseDragged) | CGEventMaskBit(kCGEventRightMouseDragged), 
+            __mouseTapCallback, 
+            nullptr
+        );
+
+        if(!mouseTap) return false;
+
+        runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, mouseTap, 0);
+        CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, kCFRunLoopCommonModes);
+        CGEventTapEnable(mouseTap, true);
     }
     else {
-        CGDisplayShowCursor(kCGDirectMainDisplay);
-        CGAssociateMouseAndMouseCursorPosition(true);
+        if(!mouseTap) return false;
+
+        CGEventTapEnable(mouseTap, false);
+        if(runLoopSource) {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, kCFRunLoopCommonModes);
+            CFRunLoopSourceInvalidate(runLoopSource);
+            CFRelease(runLoopSource);
+            runLoopSource = nullptr;
+        }
+        CFRelease(mouseTap);
+        mouseTap = nullptr;
     }
     return true;
 
