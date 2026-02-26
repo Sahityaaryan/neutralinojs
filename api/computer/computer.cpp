@@ -237,27 +237,27 @@ bool sendKey(unsigned int keyCode, bool up = true) {
 
     #elif defined(__APPLE__)
     CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState);
-    CGEventRef ev = CGEventCreateKeyboardEvent(source, keyCode, true);
-    CGEventPost(kCGHIDEventTap, ev);
-    CFRelease(ev);
+    CGEventRef event = CGEventCreateKeyboardEvent(source, keyCode, true);
+    CGEventPost(kCGHIDEventTap, event);
+    CFRelease(event);
 
     if(up) {
-        ev = CGEventCreateKeyboardEvent(source, keyCode, false);
-        CGEventPost(kCGHIDEventTap, ev);
-        CFRelease(ev);
+        event = CGEventCreateKeyboardEvent(source, keyCode, false);
+        CGEventPost(kCGHIDEventTap, event);
+        CFRelease(event);
     }
     return true;
 
     #elif defined(__linux__) || defined(__FreeBSD__)
-    Display *d = XOpenDisplay(nullptr);
-    if(!d) return false;
+    Display *display = XOpenDisplay(nullptr);
+    if(!display) return false;
 
-    XTestFakeKeyEvent(d, keyCode, true, CurrentTime);
+    XTestFakeKeyEvent(display, keyCode, true, CurrentTime);
     if(up) {
-        XTestFakeKeyEvent(d, keyCode, false, CurrentTime);
+        XTestFakeKeyEvent(display, keyCode, false, CurrentTime);
     }
-    XFlush(d);
-    XCloseDisplay(d);
+    XFlush(display);
+    XCloseDisplay(display);
     return true;
     
     #else
