@@ -136,7 +136,7 @@ bool setMousePosition(int x, int y) {
     Display *display = XOpenDisplay(nullptr);
     if(!display) return false;
 
-    XWarpPointer(display, None, DefaultRootWindow(d), 0, 0, 0, 0, x, y);
+    XWarpPointer(display, None, DefaultRootWindow(display), 0, 0, 0, 0, x, y);
     XFlush(display);
     XCloseDisplay(display);
     return true;
