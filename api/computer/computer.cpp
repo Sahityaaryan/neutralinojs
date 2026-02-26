@@ -7,6 +7,7 @@
 #include <sys/sysinfo.h>
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
+#include <gdk/gdkx.h>
 #include <X11/Xlib.h>
 #include <X11/extensions/XTest.h>
 #include <cstdlib>
@@ -136,26 +137,26 @@ bool setMouseGrabbing(bool grabbing = true) {
     return true;
 
     #elif defined(__linux__) || defined(__FreeBSD__)
-        GdkWindow *window = gtk_widget_get_window(window::getHandle());
-        GdkDisplay *display = gdk_window_get_display(window);
-        GdkSeat *seat = gdk_display_get_default_seat(display);
-
+        GdkWindow *gdkWindow = gtk_widget_get_window(window::getHandle());
+        Display *xDisplay = gdk_x11_display_get_xdisplay(gdk_window_get_display(gdkWindow));
+        Window xWindow = gdk_x11_window_get_xid(gdkWindow);
         if(grabbing) {
-        return gdk_seat_grab(
-            seat,
-            window,
-            GDK_SEAT_CAPABILITY_POINTER,
-            FALSE,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr
-        ) == GDK_GRAB_SUCCESS;
-    }
-    else {
-        gdk_seat_ungrab(seat);
-        return true;
-    }
+            return XGrabPointer(
+                xDisplay,
+                xWindow,
+                True,
+                ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+                GrabModeAsync,
+                GrabModeAsync,
+                xWindow,
+                None,
+                CurrentTime
+            ) == GrabSuccess;
+        }
+        else {
+            XUngrabPointer(xDisplay, CurrentTime);
+            return true;
+        }
     #else
     return false;
     #endif
