@@ -220,11 +220,9 @@ bool setMouseGrabbing(bool grabbing = true) {
 
 bool sendKey(unsigned int keyCode, bool up = true) {
     #if defined(_WIN32)
-    SHORT vk = VkKeyScanA(keyCode);
-
     INPUT in {};
     in.type = INPUT_KEYBOARD;
-    in.ki.wVk = vk;
+    in.ki.wVk = keyCode;
     in.ki.dwFlags = 0;
 
     SendInput(1, &in, sizeof(INPUT));
