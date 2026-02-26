@@ -11,9 +11,11 @@ using namespace std;
 
 namespace computer {
 
+enum SendKeyState { SendKeyStatePress, SendKeyStateDown, SendKeyStateUp };
+
 bool setMousePosition(int x, int y);
 bool setMouseGrabbing(bool grabbing);
-bool sendKey(const string &key, bool up);
+bool sendKey(const string &key, computer::SendKeyState keyState);
 
 string getArch();
 pair<int, int> getMousePosition();

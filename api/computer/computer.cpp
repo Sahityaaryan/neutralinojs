@@ -218,16 +218,18 @@ bool setMouseGrabbing(bool grabbing = true) {
     #endif
 }
 
-bool sendKey(unsigned int keyCode, bool up = true) {
+bool sendKey(unsigned int keyCode, computer::SendKeyState keyState = computer::SendKeyStatePress) {
     #if defined(_WIN32)
     INPUT in {};
     in.type = INPUT_KEYBOARD;
     in.ki.wVk = keyCode;
-    in.ki.dwFlags = 0;
 
-    SendInput(1, &in, sizeof(INPUT));
+    if(keyState == computer::SendKeyStatePress || keyState == computer::SendKeyStateDown) {
+        in.ki.dwFlags = 0;
+        SendInput(1, &in, sizeof(INPUT));
+    }
 
-    if(up) {
+    if(keyState == computer::SendKeyStatePress || keyState == computer::SendKeyStateUp) {
         in.ki.dwFlags = KEYEVENTF_KEYUP;
         SendInput(1, &in, sizeof(INPUT));
     }
@@ -235,12 +237,15 @@ bool sendKey(unsigned int keyCode, bool up = true) {
 
     #elif defined(__APPLE__)
     CGEventSourceRef source = CGEventSourceCreate(kCGEventSourceStateHIDSystemState);
-    CGEventRef event = CGEventCreateKeyboardEvent(source, keyCode, true);
-    CGEventPost(kCGHIDEventTap, event);
-    CFRelease(event);
 
-    if(up) {
-        event = CGEventCreateKeyboardEvent(source, keyCode, false);
+    if(keyState == computer::SendKeyStatePress || keyState == computer::SendKeyStateDown) {
+        CGEventRef event = CGEventCreateKeyboardEvent(source, keyCode, true);
+        CGEventPost(kCGHIDEventTap, event);
+        CFRelease(event);
+    }
+
+    if(keyState == computer::SendKeyStatePress || keyState == computer::SendKeyStateUp) {
+        CGEventRef event = CGEventCreateKeyboardEvent(source, keyCode, false);
         CGEventPost(kCGHIDEventTap, event);
         CFRelease(event);
     }
@@ -250,8 +255,10 @@ bool sendKey(unsigned int keyCode, bool up = true) {
     Display *display = XOpenDisplay(nullptr);
     if(!display) return false;
 
-    XTestFakeKeyEvent(display, keyCode, true, CurrentTime);
-    if(up) {
+    if(keyState == computer::SendKeyStatePress || keyState == computer::SendKeyStateDown) {
+        XTestFakeKeyEvent(display, keyCode, true, CurrentTime);
+    }
+    if(keyState == computer::SendKeyStatePress || keyState == computer::SendKeyStateUp) {
         XTestFakeKeyEvent(display, keyCode, false, CurrentTime);
     }
     XFlush(display);
@@ -434,12 +441,16 @@ json sendKey(const json &input) {
     }
 
     int keyCode = input["keyCode"].get<int>();
-    bool up = true;
+    computer::SendKeyState keyState = computer::SendKeyStatePress;
     
-    if(helpers::hasField(input, "up"))
-        up = input["up"].get<bool>();
+    if(helpers::hasField(input, "keyState")) {
+        string state = input["keyState"].get<string>();
+        if(state == "press") keyState = computer::SendKeyStatePress;
+        if(state == "down") keyState = computer::SendKeyStateDown;
+        if(state == "up") keyState = computer::SendKeyStateUp;
+    }
 
-    if(!computer::sendKey(keyCode, up)) {
+    if(!computer::sendKey(keyCode, keyState)) {
         output["error"] = errors::makeErrorPayload(errors::NE_RT_NATRTER);
         return output;
     }
