@@ -124,21 +124,21 @@ pair<int, int> getMousePosition() {
 
 bool setMousePosition(int x, int y) {
     #if defined(_WIN32)
-    POINT p { x, y };
-    return SetCursorPos(p.x, p.y);
+    POINT pos { x, y };
+    return SetCursorPos(pos.x, pos.y);
 
     #elif defined(__APPLE__)
-    CGPoint p = CGPointMake(x, y);
-    CGWarpMouseCursorPosition(p);
+    CGPoint pos = CGPointMake(x, y);
+    CGWarpMouseCursorPosition(pos);
     return true;
 
     #elif defined(__linux__) || defined(__FreeBSD__)
-    Display *d = XOpenDisplay(nullptr);
-    if(!d) return false;
+    Display *display = XOpenDisplay(nullptr);
+    if(!display) return false;
 
-    XWarpPointer(d, None, DefaultRootWindow(d), 0, 0, 0, 0, x, y);
-    XFlush(d);
-    XCloseDisplay(d);
+    XWarpPointer(display, None, DefaultRootWindow(d), 0, 0, 0, 0, x, y);
+    XFlush(display);
+    XCloseDisplay(display);
     return true;
     #else
     return false;
@@ -150,12 +150,12 @@ bool setMouseGrabbing(bool grabbing = true) {
     HWND hwnd = window::getHandle();
 
     if(grabbing) {
-        RECT r;
-        GetClientRect(hwnd, &r);
-        POINT tl {r.left, r.top}, br {r.right, r.bottom};
-        ClientToScreen(hwnd, &tl);
-        ClientToScreen(hwnd, &br);
-        RECT clip {tl.x, tl.y, br.x, br.y};
+        RECT clientRect;
+        GetClientRect(hwnd, &clientRect);
+        POINT topLeft {clientRect.left, clientRect.top}, bottomRight {clientRect.right, clientRect.bottom};
+        ClientToScreen(hwnd, &topLeft);
+        ClientToScreen(hwnd, &bottomRight);
+        RECT clip {topLeft.x, topLeft.y, bottomRight.x, bottomRight.y};
         return ClipCursor(&clip);
     }
     return ClipCursor(nullptr);
