@@ -14,7 +14,7 @@ rename `Unreleased` topic with the new version tag. Finally, create a new `Unrel
 // Simulate letter 'a' press on GNU/Linux
 await Neutralino.computer.sendKey(38)
 
-// Simulate Ctrl + V keyboard shortcut
+// Simulate Ctrl + V keyboard shortcut on GNU/Linux
 await Neutralino.computer.sendKey(105, 'down')    // Hold right control
 await Neutralino.computer.sendKey(47, 'down')     // Hold letter 'v' 
 await Neutralino.computer.sendKey(47, 'up')       // Release letter 'v'
