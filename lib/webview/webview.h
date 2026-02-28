@@ -161,7 +161,7 @@ class gtk_webkit_engine {
 public:
   gtk_webkit_engine(bool debug, bool openInspector, void *window, bool transparent, const std::string &args)
       : m_window(static_cast<GtkWidget *>(window)) {
-        
+
     setlocale(LC_ALL, "");
 
     XInitThreads();
@@ -220,18 +220,18 @@ public:
             if(!windowStateChange) return;
 
             if(event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN) {
-                windowStateChange(event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN ? 
+                windowStateChange(event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN ?
                   WEBVIEW_WINDOW_FULLSCREEN : WEBVIEW_WINDOW_UNFULLSCREEN);
             }
             else if(event->changed_mask & GDK_WINDOW_STATE_ICONIFIED) {
-                windowStateChange(event->new_window_state & GDK_WINDOW_STATE_ICONIFIED ? 
+                windowStateChange(event->new_window_state & GDK_WINDOW_STATE_ICONIFIED ?
                   WEBVIEW_WINDOW_MINIMIZED : WEBVIEW_WINDOW_RESTORED);
             }
             else if(event->changed_mask & GDK_WINDOW_STATE_FOCUSED) {
-                windowStateChange(event->new_window_state & GDK_WINDOW_STATE_FOCUSED ? 
+                windowStateChange(event->new_window_state & GDK_WINDOW_STATE_FOCUSED ?
                   WEBVIEW_WINDOW_FOCUS : WEBVIEW_WINDOW_BLUR);
             }
-            else if(event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED && 
+            else if(event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED &&
                 event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED) {
                 windowStateChange(WEBVIEW_WINDOW_MAXIMIZE);
             }
@@ -285,7 +285,7 @@ public:
     m_webview = webkit_web_view_new();
 
     GtkWidget *parentContainer = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    gtk_box_pack_start(GTK_BOX(parentContainer), GTK_WIDGET(m_webview), true, true, 0);    
+    gtk_box_pack_start(GTK_BOX(parentContainer), GTK_WIDGET(m_webview), true, true, 0);
     gtk_container_add(GTK_CONTAINER(m_window), parentContainer);
 
     gtk_widget_grab_focus(GTK_WIDGET(m_webview));
@@ -461,7 +461,7 @@ public:
                         return YES;
                     }), "c@:@c");
     class_addMethod(cls, "menuCallback:"_sel,
-      (IMP)(+[](id, SEL, id sender) -> void { 
+      (IMP)(+[](id, SEL, id sender) -> void {
       WindowMenuItem *m = ((WindowMenuItem *(*)(id, SEL))objc_msgSend)(
           ((id (*)(id, SEL))objc_msgSend)(sender, "representedObject"_sel),
           "pointerValue"_sel);
@@ -609,39 +609,6 @@ public:
           ((id(*)(id, SEL, BOOL))objc_msgSend)("NSNumber"_cls, "numberWithBool:"_sel, 0),
           "drawsBackground"_str);
     }
-
-    // UIDelegate for handling file input dialogs (<input type="file">)
-    auto uicls =
-        objc_allocateClassPair((Class) "NSObject"_cls, "WebViewUIDelegate", 0);
-    class_addProtocol(uicls, objc_getProtocol("WKUIDelegate"));
-    class_addMethod(uicls,
-        "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:"_sel,
-        (IMP)(+[](id, SEL, id, id parameters, id, id completionHandler) {
-            id panel = ((id(*)(id, SEL))objc_msgSend)(
-                "NSOpenPanel"_cls, "openPanel"_sel);
-
-            BOOL allowsMultiple = ((BOOL(*)(id, SEL))objc_msgSend)(
-                parameters, "allowsMultipleSelection"_sel);
-            ((void(*)(id, SEL, BOOL))objc_msgSend)(
-                panel, "setAllowsMultipleSelection:"_sel, allowsMultiple);
-
-            long result = ((long(*)(id, SEL))objc_msgSend)(
-                panel, "runModal"_sel);
-
-            // Block layout (Apple ABI): isa(8) + flags(4) + reserved(4) + invoke(8)
-            auto invoke = *reinterpret_cast<void(**)(void*, id)>(
-                reinterpret_cast<char*>(completionHandler) + 16);
-
-            if (result == 1) { // NSModalResponseOK
-                id urls = ((id(*)(id, SEL))objc_msgSend)(panel, "URLs"_sel);
-                invoke(completionHandler, urls);
-            }
-            else {
-                invoke(completionHandler, nullptr);
-            }
-        }),
-        "v@:@@@@");
-    objc_registerClassPair(uicls);
 
     auto uidelegate = ((id(*)(id, SEL))objc_msgSend)((id)uicls, "new"_sel);
     ((void(*)(id, SEL, id))objc_msgSend)(
@@ -1021,11 +988,11 @@ public:
             case WM_SIZE:
               w->m_browser->resize(hwnd);
               if(!windowStateChange) break;
-              if(wp == SIZE_MINIMIZED) 
+              if(wp == SIZE_MINIMIZED)
                 windowStateChange(WEBVIEW_WINDOW_MINIMIZED);
-              else if(wp == SIZE_RESTORED) 
+              else if(wp == SIZE_RESTORED)
                 windowStateChange(WEBVIEW_WINDOW_RESTORED);
-              else if(wp == SIZE_MAXIMIZED) 
+              else if(wp == SIZE_MAXIMIZED)
                 windowStateChange(WEBVIEW_WINDOW_MAXIMIZE);
               break;
             case WM_CLOSE:
