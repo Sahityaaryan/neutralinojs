@@ -255,6 +255,12 @@ public:
     }
 
     if(!dlib) {
+      fprintf(stderr, "ERROR: Unable to load WebKit2GTK library. "
+          "Please install libwebkit2gtk-4.0-37 or libwebkit2gtk-4.1-0.\n");
+      const char *err = dlerror();
+      if(err) {
+          fprintf(stderr, "dlopen error: %s\n", err);
+      }
       initCode = 1;
       return;
     }
@@ -604,6 +610,43 @@ public:
           "drawsBackground"_str);
     }
 
+    // UIDelegate for handling file input dialogs (<input type="file">)
+    auto uicls =
+        objc_allocateClassPair((Class) "NSObject"_cls, "WebViewUIDelegate", 0);
+    class_addProtocol(uicls, objc_getProtocol("WKUIDelegate"));
+    class_addMethod(uicls,
+        "webView:runOpenPanelWithParameters:initiatedByFrame:completionHandler:"_sel,
+        (IMP)(+[](id, SEL, id, id parameters, id, id completionHandler) {
+            id panel = ((id(*)(id, SEL))objc_msgSend)(
+                "NSOpenPanel"_cls, "openPanel"_sel);
+
+            BOOL allowsMultiple = ((BOOL(*)(id, SEL))objc_msgSend)(
+                parameters, "allowsMultipleSelection"_sel);
+            ((void(*)(id, SEL, BOOL))objc_msgSend)(
+                panel, "setAllowsMultipleSelection:"_sel, allowsMultiple);
+
+            long result = ((long(*)(id, SEL))objc_msgSend)(
+                panel, "runModal"_sel);
+
+            // Block layout (Apple ABI): isa(8) + flags(4) + reserved(4) + invoke(8)
+            auto invoke = *reinterpret_cast<void(**)(void*, id)>(
+                reinterpret_cast<char*>(completionHandler) + 16);
+
+            if (result == 1) { // NSModalResponseOK
+                id urls = ((id(*)(id, SEL))objc_msgSend)(panel, "URLs"_sel);
+                invoke(completionHandler, urls);
+            }
+            else {
+                invoke(completionHandler, nullptr);
+            }
+        }),
+        "v@:@@@@");
+    objc_registerClassPair(uicls);
+
+    auto uidelegate = ((id(*)(id, SEL))objc_msgSend)((id)uicls, "new"_sel);
+    ((void(*)(id, SEL, id))objc_msgSend)(
+        m_webview, "setUIDelegate:"_sel, uidelegate);
+
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "setContentView:"_sel,
                                           m_webview);
     ((void (*)(id, SEL, id))objc_msgSend)(m_window, "makeKeyAndOrderFront:"_sel,
@@ -823,6 +866,8 @@ public:
         }
     ));
     if (res != S_OK) {
+      fprintf(stderr, "ERROR: Unable to initialize WebView2. HRESULT: 0x%lx\n"
+          "Please install Microsoft Edge WebView2 runtime.\n", (unsigned long)res);
       CoUninitialize();
       return false;
     }
@@ -861,13 +906,6 @@ public:
     RECT bounds;
     GetClientRect(wnd, &bounds);
     m_controller->put_Bounds(bounds);
-  }
-
-  void focus(){
-    if(m_controller == nullptr){
-      return;
-    }
-    m_controller->MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC);
   }
 
   void navigate(const std::string url) {
@@ -998,10 +1036,8 @@ public:
               if(!windowStateChange) break;
               if(LOWORD(wp) == WA_INACTIVE)
                 windowStateChange(WEBVIEW_WINDOW_BLUR);
-              else{
+              else
                 windowStateChange(WEBVIEW_WINDOW_FOCUS);
-                w->m_browser->focus();
-              }
               break;
             case WM_DESTROY:
               PostQuitMessage(processExitCode);
